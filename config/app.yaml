@@ -1,0 +1,104 @@
+# 低空之眼 · 全局配置
+# 所有阈值集中在此处，代码中不得出现硬编码魔法数字（方案 v2 第 6 章「时延预算 / 硬件配置」可据此复现）
+
+app:
+  name: 低空之眼
+  subtitle: 低空巡检决策层软件
+  version: 0.1.0
+  trace_retention: 200          # 内存中保留的最近分析记录条数
+
+paths:
+  data_raw: data/raw            # 原始知识文档（PDF/TXT/MD）
+  data_processed: data/processed  # 切分后的条款 JSONL
+  index_dir: data/index         # 检索索引
+  assets: data/assets           # 演示图片与标注（sidecar）
+  uploads: data/uploads         # 上传件
+  out: out                      # 报告与评测产物
+  web: web                      # 前端静态资源
+
+retrieval:
+  # 两路召回 → RRF 融合 → 重排 → top-k
+  bm25_top_k: 30
+  vector_top_k: 30
+  fused_top_k: 20
+  final_top_k: 5
+  rrf_k: 60                     # RRF 平滑常数，常用 60
+  min_relevance: 0.18           # 融合后最高分低于此值 → 判定「知识库未覆盖」并拒答，禁止自由发挥
+  require_clause_no: true       # 引用必须带出条款号，否则视为不合格引用
+
+  # 向量后端：hashing_tfidf（默认，零下载） / sentence_transformer（装了 torch+BGE 才可用）
+  embedder: hashing_tfidf
+  embed_dim: 4096
+  embedder_model: BAAI/bge-m3
+  embedder_model_path: null     # 本地模型目录；为 null 时按模型名在线取
+
+  # 重排后端：lexical（默认，确定性词法重排） / cross_encoder（装了 torch+BGE 才可用）
+  reranker: lexical
+  reranker_model: BAAI/bge-reranker-v2-m3
+  # 领域术语表：检索前把口语说法归一化到规程术语，并追加规范术语提高召回。
+  # 置空表示关闭（消融对照时要关掉看差异）。
+  lexicon: config/lexicon.yaml
+  reranker_model_path: null
+
+  # 场景 → 允许回答的文档（doc_id 见 config/sources.yaml）。
+  # 输电缺陷的工单不该引用《植保作业指引》里的通用条款，各专业规程各管一段。
+  # 留空或删掉某场景 = 该场景不限制；知识库页的自由检索始终是全库。
+  scene_docs:
+    power: [demo_line_guide]
+    agriculture: [demo_crop_guide]
+    emergency: [demo_emergency_plan, demo_line_guide]
+
+detect:
+  # 检测后端：hybrid（演示图走 sidecar 离线标注、上传照片走 onnx 真实推理）
+  #          sidecar（读同目录同名 .json 标注）/ onnx / torch / null
+  detector: hybrid
+  onnx_path: models/detector/cplid_fcos_1024.onnx  # FCOS-ResNet50-FPN，CPLID 微调（绝缘子/缺陷）
+  input_size: 1024              # ONNX 输入边长；FCOS 导出图尺寸是常量，必须与导出时一致
+  nms_iou: 0.50                 # 跨切片去重的 IoU 阈值
+  class_names: [insulator, defect]  # 与权重训练的两类一致
+  conf_threshold: 0.25
+  # 低于此置信度直接转人工复核（方案 v2 M1 的 route 字段）
+  human_review_threshold: 0.60
+  model_version: cplid-fcos-r50fpn-1024
+  slice:                        # SAHI 切片推理参数；CPLID 图整幅 letterbox 即可，切片反而切碎绝缘子串
+    enabled: false
+    size: 1024
+    overlap: 0.2
+
+llm:
+  # 生成后端：template（默认，从检索到的条款确定性拼装，结构上不可能幻觉）
+  #          openai_compat（云端或本地 OpenAI 兼容接口）
+  provider: template
+  base_url: null                # 例：https://dashscope.aliyuncs.com/compatible-mode/v1
+  api_key_env: LOWEYE_LLM_API_KEY
+  model: null                   # 例：qwen-vl-max / glm-4v
+  timeout_s: 20
+  max_retries: 1
+
+tools:
+  workorder:
+    enabled: true
+  notify:                       # 钉钉/飞书群机器人 webhook
+    enabled: false
+    webhook_url_env: LOWEYE_NOTIFY_WEBHOOK
+    timeout_s: 5
+  weather:
+    enabled: false
+    api_key_env: LOWEYE_WEATHER_KEY
+  report:
+    enabled: true
+    template: config/report_template.html
+
+severity:
+  # 分级规则表（确定性规则，不交由大模型判定）
+  rules_file: config/routes.yaml
+
+eval:
+  # M6 评估：金标问答集（自编，条款来自演示占位文档）
+  goldset: eval/gold_qa.yaml
+  # arm B 直答基线：scripted=脚本化代理（离线可复现）；api=真调大模型（需 llm.base_url）
+  arm_b_mode: scripted
+
+server:
+  host: 127.0.0.1
+  port: 8848

@@ -1,0 +1,45 @@
+# 低空之眼 —— 运行依赖
+# 安装：.venv\Scripts\python.exe -m pip install -r requirements.txt
+#
+# 说明（对应方案 v2 第 3 章「降级链」设计）：
+#   核心依赖全部是纯 CPU 可跑的轻量库，保证赛事演示机断网也能跑起来。
+#   「可选增强依赖」装了就走神经网络检索，不装则自动降级为确定性实现，
+#   两条路都真实可跑，不存在「没装就跑不动」的假闭环。
+
+# ---- 核心：服务与结构化契约 ----
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.7
+python-multipart>=0.0.9
+jinja2>=3.1
+
+# ---- 核心：知识库解析与检索（M2） ----
+pymupdf>=1.24          # PDF 文本与版面抽取
+jieba>=0.42            # 中文分词（BM25 用）
+rank_bm25>=0.2         # Okapi BM25 实现
+numpy>=2.0             # 向量检索与指标计算
+pyyaml>=6.0
+
+# ---- 核心：演示数据与报告 ----
+Pillow>=11.0           # tools/make_demo_assets.py 生成合成演示图（运行时不需要）
+
+# ---- 核心：评测与接口自测 ----
+httpx>=0.27
+
+# ---- 可选增强：神经网络检索（装上即自动启用，见 config/app.yaml 的 retrieval.embedder / reranker） ----
+# 体积较大（含 torch），赛事机器显存/磁盘紧张时不装，系统照样跑；本机已实测装好后
+# 留出集 Recall@1 从 50% 提到 90%（见 README 7.5 节）。
+# 安装顺序：pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   sentence-transformers>=6.0     # BGE-M3 向量、bge-reranker-v2-m3 重排
+#   torch>=2.3                     # CPU 版即可
+#
+# ---- 可选增强：真实目标检测器（M1） ----
+# 通道已跑通：装上 onnxruntime 后把 config/app.onnx.yaml 的 detect.onnx_path 指向权重即可，
+# 本机已用 RTMDet-tiny COCO（Apache-2.0）验证过双输出格式与 SAHI 切片（见 README 7.6 节）。
+#   onnxruntime>=1.18
+#   opencv-python-headless>=4.10
+#
+# ---- 可选增强：方案书与演示视频的制作工具（不参与运行时） ----
+#   markdown-it-py>=3.0            # tools/build_proposal.py 的 Markdown → HTML
+#   modelscope>=1.20               # tools/fetch_models.py 的国内权重源（可选，也可用 HF 镜像）
+#   imageio-ffmpeg>=0.5            # 提供 ffmpeg 二进制给 tools/record_demo.py（或自行放 tools/bin/ffmpeg.exe）

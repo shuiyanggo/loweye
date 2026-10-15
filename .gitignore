@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# 模型权重与数据集（体积大 / 许可限制，不入公开仓库）
+models/
+data/
+*.pth
+*.onnx
+*.safetensors
+*.ckpt
+
+# 构建产物、回收制品与运行日志
+out/
+*.log
+
+# 下载的二进制（ffmpeg / cloudflared 等）
+tools/bin/*.exe
+tools/bin/*.dll
+
+# IDE / 编辑器
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# 密钥与本地配置
+.env
+*.env
+*.local

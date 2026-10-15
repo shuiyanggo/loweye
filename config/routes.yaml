@@ -1,0 +1,98 @@
+# 缺陷分级与派单规则表
+#
+# 设计原则（方案 v2 第 4 章 M3）：分级不交给大模型判断，用确定性规则表。
+# 理由是分级直接决定派单与 SLA，必须可复现、可审计、可在答辩现场逐条解释。
+# 处置动作（actions）不写死在这里，而是由知识库检索结果 + 模板生成，
+# 保证每条动作都能回带条款号（可溯源）。
+
+defaults:
+  severity: P3
+  assignee_role: 运维班组
+  sla_hours: 72
+
+rules:
+  insulator_broken:
+    label: 绝缘子自爆（伞裙破损）
+    severity: P1
+    sla_hours: 24
+    assignee_role: 输电运检班
+    keywords: [绝缘子, 自爆, 破损, 伞裙, 零值]
+  insulator_polluted:
+    label: 绝缘子污秽
+    severity: P2
+    sla_hours: 72
+    assignee_role: 输电运检班
+    keywords: [绝缘子, 污秽, 积污, 盐密, 灰密]
+  fitting_corrosion:
+    label: 金具锈蚀
+    severity: P2
+    sla_hours: 72
+    assignee_role: 线路检修班
+    keywords: [金具, 锈蚀, 腐蚀]
+  conductor_strand_break:
+    label: 导地线断股
+    severity: P1
+    sla_hours: 12
+    assignee_role: 输电运检班
+    keywords: [导线, 断股, 断线, 损伤]
+  tower_tilt:
+    label: 杆塔倾斜
+    severity: P1
+    sla_hours: 24
+    assignee_role: 线路检修班
+    keywords: [杆塔, 倾斜, 基础, 沉降]
+  foreign_object:
+    label: 异物悬挂
+    severity: P2
+    sla_hours: 48
+    assignee_role: 输电运检班
+    keywords: [异物, 悬挂, 风筝, 塑料, 鸟巢]
+  vegetation_overreach:
+    label: 树障超限
+    severity: P2
+    sla_hours: 120
+    assignee_role: 通道运维班
+    keywords: [树障, 净空, 通道, 砍伐]
+  crop_disease:
+    label: 农作物病害
+    severity: P2
+    sla_hours: 48
+    assignee_role: 植保服务队
+    keywords: [病害, 病斑, 霉层, 植保]
+  crop_pest:
+    label: 农作物虫害
+    severity: P2
+    sla_hours: 48
+    assignee_role: 植保服务队
+    keywords: [虫害, 虫口, 幼虫, 防治]
+  fire_smoke:
+    label: 火情烟雾
+    severity: P1
+    sla_hours: 2
+    assignee_role: 应急指挥中心
+    keywords: [火情, 烟雾, 明火, 山火]
+
+  # --- 真实检测权重的类别名（models/detector/cplid_fcos_1024.onnx，CPLID 微调）---
+  # 规则表按「模型输出的类别名」做键：上表用的是演示图的类别，换真实权重时必须在这里补。
+  # 漏补的症状是分级静默走默认值、全部转人工（现场表现：defect 0.82 也判 P3）。
+  defect:
+    label: 绝缘子破损
+    severity: P1
+    sla_hours: 24
+    assignee_role: 输电运检班
+    keywords: [绝缘子, 破损, 自爆, 伞裙, 零值]
+  insulator:
+    label: 绝缘子（未见缺陷）
+    severity: P4
+    sla_hours: 720
+    assignee_role: 运维班组
+    keywords: [绝缘子, 正常]
+    normal: true            # 正常类：出检测结论，但不出工单、不派单
+
+# 人工复核触发条件（方案 v2 M1 的 route 字段）
+human_review:
+  # 任一条件成立即转人工
+  on_low_confidence: true     # 检测置信度 < detect.human_review_threshold
+  on_no_citation: true        # 检索不到任何条款依据
+  on_severity_in: [P1]        # P1 一律人工确认后再派单
+  on_unknown_class: true      # 检测类别不在上表

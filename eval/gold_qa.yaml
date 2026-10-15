@@ -1,0 +1,304 @@
+# 金标问答集（M6 评估用）
+#
+# 用途：量化「检索是否准、拒答是否稳」，而不是靠感觉说「还行」。
+# 判定口径（写死在 runner 里，避免临时改口径）：
+#   命中 = 返回的前 k 条里出现 (doc, clause) 完全匹配的条款；
+#   Recall@k = 命中问题的比例；MRR = 第一条命中排名的倒数均值。
+#
+# 两点必须诚实说明（报告里也会写）：
+#   1) 这套题是项目自编的，条款来自 data/raw 下的演示占位文档（非任何标准原文），
+#      所以它度量的是**本系统检索链路的行为**，不是行业权威答案的准确率；
+#   2) 越界问题的期望结果是「拒答」，不是「答对」，因此不参与 Recall 统计。
+#
+# 域内问题：期望至少命中 clauses 里的任意一条（同一条款号在别的文档里出现不算命中，
+# 因此必须用 doc 限定文档）。
+
+in_scope:
+  - id: L-01
+    question: 绝缘子自爆怎么处理
+    doc: demo_line_guide
+    clauses: ["2.1.2", "2.1.1"]
+    note: 一条问「处置」，一条问「判定」，两条都算对
+  - id: L-02
+    question: 发现绝缘子自爆后多长时间必须到达现场复核
+    doc: demo_line_guide
+    clauses: ["2.1.2"]
+  - id: L-03
+    question: 自爆片数超过多少比例需要停电更换整串绝缘子
+    doc: demo_line_guide
+    clauses: ["2.1.3"]
+  - id: L-04
+    question: 自爆片数没有超过 5% 且工况允许时怎么监视
+    doc: demo_line_guide
+    clauses: ["2.1.4"]
+  - id: L-05
+    question: 绝缘子污秽的处置时限与措施
+    doc: demo_line_guide
+    clauses: ["2.2.2"]
+  - id: L-06
+    question: 重污区盐密持续上升的区段多久复测一次
+    doc: demo_line_guide
+    clauses: ["2.2.3"]
+  - id: L-07
+    question: 金具锈蚀应该怎么除锈防腐
+    doc: demo_line_guide
+    clauses: ["3.1.2"]
+  - id: L-08
+    question: 金具出现裂纹变形或明显磨损怎么处理
+    doc: demo_line_guide
+    clauses: ["3.1.3"]
+  - id: L-09
+    question: 导地线断股 危急缺陷 处置
+    doc: demo_line_guide
+    clauses: ["3.2.1", "3.2.2"]
+  - id: L-10
+    question: 断股截面超过 25% 如何处理
+    doc: demo_line_guide
+    clauses: ["3.2.3"]
+  - id: L-11
+    question: 杆塔倾斜度超过多少判定为危急缺陷
+    doc: demo_line_guide
+    clauses: ["4.1.1"]
+  - id: L-12
+    question: 发现杆塔倾斜后现场要测量什么 要不要建沉降观测点
+    doc: demo_line_guide
+    clauses: ["4.1.2"]
+  - id: L-13
+    question: 异物悬挂 清除时限
+    doc: demo_line_guide
+    clauses: ["4.2.2"]
+  - id: L-14
+    question: 异物已经造成放电痕迹或灼伤怎么办
+    doc: demo_line_guide
+    clauses: ["4.2.3"]
+  - id: L-15
+    question: 通道内树木与导线净空距离不足怎么处置
+    doc: demo_line_guide
+    clauses: ["4.3.1", "4.3.2"]
+  - id: L-16
+    question: 树障砍伐作业前需要取得谁的同意
+    doc: demo_line_guide
+    clauses: ["4.3.2"]
+  - id: L-17
+    question: 巡检数据归档时限与归档内容
+    doc: demo_line_guide
+    clauses: ["1.1.3"]
+  - id: L-18
+    question: 巡田影像能不能压缩后再用于识别
+    doc: demo_crop_guide
+    clauses: ["1.1.3"]
+  - id: L-19
+    question: 发现叶部病斑后多久要安排植保服务队到田间核实
+    doc: demo_crop_guide
+    clauses: ["2.1.2"]
+  - id: L-20
+    question: 病斑面积占比超过 30% 或成片枯死怎么处理
+    doc: demo_crop_guide
+    clauses: ["2.1.3"]
+  - id: L-21
+    question: 根部或茎基部病害取样送检要求
+    doc: demo_crop_guide
+    clauses: ["2.2.2"]
+  - id: L-22
+    question: 食叶类害虫防治用什么措施 多久完成
+    doc: demo_crop_guide
+    clauses: ["3.1.2"]
+  - id: L-23
+    question: 刺吸类害虫核实要求与病毒病风险排查
+    doc: demo_crop_guide
+    clauses: ["3.2.2"]
+  - id: L-24
+    question: 巡田飞行高度与航向旁向重叠率要求
+    doc: demo_crop_guide
+    clauses: ["4.1.1"]
+  - id: L-25
+    question: 巡田报告应该在多久内提交给植保服务队
+    doc: demo_crop_guide
+    clauses: ["4.2.2"]
+  - id: L-26
+    question: 巡田报告里每条处置建议要注明什么
+    doc: demo_crop_guide
+    clauses: ["4.2.1"]
+  - id: L-27
+    question: 一级响应情形的上报时限是多久
+    doc: demo_emergency_plan
+    clauses: ["2.1.1"]
+  - id: L-28
+    question: 二级响应情形怎么上报 无人机要保持什么状态
+    doc: demo_emergency_plan
+    clauses: ["2.1.2"]
+  - id: L-29
+    question: 火情监视时无人机应该保持什么位置和距离
+    doc: demo_emergency_plan
+    clauses: ["3.1.1"]
+  - id: L-30
+    question: 明火扑灭后还要监视多久
+    doc: demo_emergency_plan
+    clauses: ["3.2.3"]
+  - id: L-31
+    question: 一级响应情形下线路要不要转检修或停电
+    doc: demo_emergency_plan
+    clauses: ["3.2.1"]
+  - id: L-32
+    question: 山火上报内容需要包含哪些信息
+    doc: demo_emergency_plan
+    clauses: ["2.2.1"]
+  - id: L-33
+    question: 上报信息里能不能写未经核实的原因判断
+    doc: demo_emergency_plan
+    clauses: ["2.2.2"]
+  - id: L-34
+    question: 火情监视多久回传一次影像与火场边界坐标
+    doc: demo_emergency_plan
+    clauses: ["3.1.2"]
+
+# 改写题（group: paraphrase）：刻意**不使用文档原词**，用现场口吻提问。
+# 为什么单列一组：原词提问对任何检索方式都太容易（BM25 直接命中），
+# 四组配置会一起满分，比不出差别；改写题才看得出「只靠词面」和
+# 「词面+语义+重排」的区别。这一组的存在本身就是要防止把
+# 「全部 100%」当成「检索策略有效」的证据。
+  - id: P-01
+    group: paraphrase
+    question: 塔上那串瓷瓶碎了一片 要不要马上停电
+    doc: demo_line_guide
+    clauses: ["2.1.1", "2.1.2", "2.1.3"]
+    note: 对应绝缘子自爆的判定与处置
+  - id: P-02
+    group: paraphrase
+    question: 塑料布缠到电线上了 多久必须弄下来
+    doc: demo_line_guide
+    clauses: ["4.2.2", "4.2.1"]
+  - id: P-03
+    group: paraphrase
+    question: 村里的大树快碰到线了 砍之前要找谁
+    doc: demo_line_guide
+    clauses: ["4.3.2", "4.3.1"]
+  - id: P-04
+    group: paraphrase
+    question: 导线断了几股 人要多快到现场
+    doc: demo_line_guide
+    clauses: ["3.2.2", "3.2.1"]
+  - id: P-05
+    group: paraphrase
+    question: 杆子歪了 要不要测一下基础沉了多少
+    doc: demo_line_guide
+    clauses: ["4.1.2", "4.1.1"]
+  - id: P-06
+    group: paraphrase
+    question: 地里叶子长斑了 找谁 多久到
+    doc: demo_crop_guide
+    clauses: ["2.1.2", "2.1.1"]
+  - id: P-07
+    group: paraphrase
+    question: 虫子把叶子吃光了 能不能少打点药
+    doc: demo_crop_guide
+    clauses: ["3.1.2", "3.1.1"]
+  - id: P-08
+    group: paraphrase
+    question: 飞机拍回来的照片能不能压缩了再存
+    doc: demo_crop_guide
+    clauses: ["1.1.3"]
+  - id: P-09
+    group: paraphrase
+    question: 山上冒烟了 几分钟内要打电话报告
+    doc: demo_emergency_plan
+    clauses: ["2.1.1", "1.2.1"]
+  - id: P-10
+    group: paraphrase
+    question: 火扑灭了 飞机还要看多久
+    doc: demo_emergency_plan
+    clauses: ["3.2.3"]
+  - id: P-11
+    group: paraphrase
+    question: 报上去的内容要不要写清楚是几点几分看到的
+    doc: demo_emergency_plan
+    clauses: ["2.2.1"]
+  - id: P-12
+    group: paraphrase
+    question: 金属件生锈了 涂完漆还要量什么
+    doc: demo_line_guide
+    clauses: ["3.1.2"]
+
+# 留出集（group: heldout）：**术语表定稿之后**才写的改写题，写之前没有再动词表。
+# 存在的意义就是防止「在开发集上调出来的提升」被当成泛化能力：
+# 这三组必须分开报（literal=原词 / paraphrase=开发集 / heldout=留出集），
+# 留出集上的成绩才是这套检索策略对**没见过的说法**的真实表现。
+  - id: H-01
+    group: heldout
+    question: 瓷瓶上落了厚厚一层灰 算几级
+    doc: demo_line_guide
+    clauses: ["2.2.1"]
+  - id: H-02
+    group: heldout
+    question: 线夹锈得厉害 多久之内要处理完
+    doc: demo_line_guide
+    clauses: ["3.1.2", "3.1.1"]
+  - id: H-03
+    group: heldout
+    question: 铁塔歪了 超过多少算急事
+    doc: demo_line_guide
+    clauses: ["4.1.1"]
+  - id: H-04
+    group: heldout
+    question: 塑料膜挂到线上了 怎么办
+    doc: demo_line_guide
+    clauses: ["4.2.2", "4.2.1"]
+  - id: H-05
+    group: heldout
+    question: 竹子快碰到导线了 谁来处理
+    doc: demo_line_guide
+    clauses: ["4.3.2", "4.3.1"]
+  - id: H-06
+    group: heldout
+    question: 山上着火了 该报给谁 多长时间内
+    doc: demo_emergency_plan
+    clauses: ["2.1.1", "1.2.1"]
+  - id: H-07
+    group: heldout
+    question: 飞的时候风有点大 还能起飞吗
+    doc: demo_crop_guide
+    clauses: ["4.1.2"]
+  - id: H-08
+    group: heldout
+    question: 田里虫子太多 打完药过几天再看
+    doc: demo_crop_guide
+    clauses: ["3.1.3"]
+  - id: H-09
+    group: heldout
+    question: 拍回来的照片能不能压小了再存
+    doc: demo_crop_guide
+    clauses: ["1.1.3"]
+  - id: H-10
+    group: heldout
+    question: 叶子上的斑点超过三成了 用不用扩大查
+    doc: demo_crop_guide
+    clauses: ["2.1.3"]
+
+# 越界问题：期望 covered=False（拒答）。
+# 注意这里刻意混入了「看起来像本领域」但知识库确实没有依据的问法（如红外测温），
+# 用来验证系统不会因为词面相近就硬凑一条条款出来。
+out_of_scope:
+  - id: X-01
+    question: 今天股市行情怎么样
+    why: 与巡检完全无关
+  - id: X-02
+    question: 怎么做红烧肉
+    why: 与巡检完全无关
+  - id: X-03
+    question: 帮我写一首关于春天的诗
+    why: 生成类任务，不是知识库问答
+  - id: X-04
+    question: 红外测温的温升判据是多少
+    why: 演示导则 1.1.2 明确排除了红外测温定量判读，属于知识库边界外
+  - id: X-05
+    question: 直升机巡检的作业间隔要求
+    why: 同上，导则明确不覆盖直升机巡检
+  - id: X-06
+    question: 农药配比怎么计算
+    why: 巡田指引 1.1.2 明确不涵盖农药配比
+  - id: X-07
+    question: 带电作业现场操作票怎么填写
+    why: 导则明确不适用于带电作业现场操作
+  - id: X-08
+    question: 世界杯谁夺冠了
+    why: 与巡检完全无关

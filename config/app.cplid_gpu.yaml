@@ -1,0 +1,95 @@
+# 低空之眼 · GPU 微调检测权重配置（FCOS-ResNet50-FPN，CPLID 两类）
+#
+# 权重来源：租用 GPU（AutoDL RTX 4090 D）+ tools/gpu/train_cplid_fcos.py 微调，导出 ONNX。
+# 为什么不是 YOLOX-tiny / RTMDet-tiny：远端没有 nvcc（编译不了 mmcv），openmmlab 的预编译
+# mmcv 轮子只到 cu121/torch2.2，机器上是 torch 2.8.0+cu128 —— 装 mmdet 就得降级重装 torch。
+# FCOS 与 YOLOX/RTMDet 同属 anchor-free 单阶段检测器，是 torchvision 里最贴近的等价物，
+# 且能用 torch.onnx.export 直接导出（不依赖 mmdeploy）。
+#
+# 用法：
+#   python -m tools.eval_detection --config config/app.cplid_gpu.yaml \
+#     --images data/external/cplid/Defective_Insulators/images \
+#     --labels data/external/cplid/Defective_Insulators/labels/defect
+
+app:
+  name: 低空之眼
+  subtitle: 低空巡检决策层软件（FCOS GPU 微调权重评测）
+  version: 0.1.0
+  trace_retention: 200
+
+paths:
+  data_raw: data/raw
+  data_processed: data/processed
+  index_dir: data/index
+  assets: data/assets
+  uploads: data/uploads
+  out: out
+  web: web
+
+retrieval:
+  bm25_top_k: 30
+  vector_top_k: 30
+  fused_top_k: 20
+  final_top_k: 5
+  rrf_k: 60
+  min_relevance: 0.18
+  require_clause_no: true
+  embedder: hashing_tfidf
+  embed_dim: 4096
+  embedder_model: BAAI/bge-m3
+  embedder_model_path: null
+  reranker: lexical
+  reranker_model: BAAI/bge-reranker-v2-m3
+  reranker_model_path: null
+  lexicon: config/lexicon.yaml
+  scene_docs:
+    power: [demo_line_guide]
+    agriculture: [demo_crop_guide]
+    emergency: [demo_emergency_plan, demo_line_guide]
+
+detect:
+  detector: onnx
+  onnx_path: models/detector/cplid_fcos_1024.onnx
+  class_names: [insulator, defect]
+  input_size: 1024               # 与导出时一致；导出图里的尺寸是常量，喂别的尺寸会算错
+  nms_iou: 0.50
+  conf_threshold: 0.25
+  human_review_threshold: 0.60
+  model_version: cplid-fcos-r50fpn-1024
+  slice:
+    enabled: false               # CPLID 图 1152×864，整幅 letterbox 到 1024 即可，切片反而切碎绝缘子串
+    size: 1024
+    overlap: 0.2
+
+llm:
+  provider: template
+  base_url: null
+  api_key_env: LOWEYE_LLM_API_KEY
+  model: null
+  timeout_s: 20
+  max_retries: 1
+
+tools:
+  workorder:
+    enabled: false
+  notify:
+    enabled: false
+    webhook_url_env: LOWEYE_NOTIFY_WEBHOOK
+    timeout_s: 5
+  weather:
+    enabled: false
+    api_key_env: LOWEYE_WEATHER_KEY
+  report:
+    enabled: true
+    template: config/report_template.html
+
+severity:
+  rules_file: config/routes.yaml
+
+eval:
+  goldset: eval/gold_qa.yaml
+  arm_b_mode: scripted
+
+server:
+  host: 127.0.0.1
+  port: 8851

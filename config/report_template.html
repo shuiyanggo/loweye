@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<!--
+  巡检分析报告模板（Jinja2）。渲染后交给 PyMuPDF Story 排成 PDF。
+  故意只用 Story 支持的基础标签（h1/h2/p/ul/li/table），不用 flex/grid，
+  以免 PDF 侧版式崩掉；HTML 直出时另有 web/report.css 兜底。
+  配色遵守项目前端规范：白底、黑字、蓝色为主强调色，红色仅用于 P1。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>巡检分析报告 {{ r.trace_id }}</title>
+<style>
+  body { font-family: sans-serif; font-size: 10.5pt; color: #14181d; line-height: 1.6; }
+  h1 { font-size: 18pt; color: #14181d; margin: 0 0 4pt 0; }
+  h2 { font-size: 12.5pt; color: #1b4fd8; margin: 14pt 0 6pt 0; }
+  .sub { color: #5b6572; font-size: 9pt; margin-bottom: 10pt; }
+  .meta td { padding: 2pt 10pt 2pt 0; font-size: 9.5pt; }
+  .kv { color: #5b6572; }
+  p { margin: 4pt 0; }
+  ul { margin: 4pt 0 4pt 14pt; padding: 0; }
+  li { margin: 2pt 0; }
+  .sev-P1 { color: #c02a20; }
+  .sev-P2 { color: #14181d; }
+  .cite { color: #5b6572; font-size: 9pt; }
+  .quote { color: #3d4550; font-size: 9.5pt; margin: 2pt 0 2pt 14pt; }
+  .order { margin: 6pt 0 2pt 0; }
+  .foot { color: #8a929c; font-size: 8.5pt; margin-top: 16pt; }
+</style>
+</head>
+<body>
+
+<h1>{{ r.image_id }} · 巡检分析报告</h1>
+<div class="sub">
+  追溯号 {{ r.trace_id }}｜场景 {{ r.scene }}｜生成时间 {{ generated_at }}｜
+  检测后端 {{ r.detect.detector }} / {{ r.detect.model_version }}
+</div>
+
+<h2>一 检测概况</h2>
+<table class="meta">
+  <tr>
+    <td class="kv">检出目标</td><td>{{ r.detect.detections|length }} 个</td>
+    <td class="kv">切片块数</td><td>{{ r.detect.slice_count }}</td>
+    <td class="kv">检测耗时</td><td>{{ '%.1f'|format(r.detect.elapsed_ms) }} ms</td>
+  </tr>
+  <tr>
+    <td class="kv">端到端耗时</td><td>{{ '%.1f'|format(r.total_ms) }} ms</td>
+    <td class="kv">工单数</td><td>{{ r.work_orders|length }}</td>
+    <td class="kv">降级项</td><td>{{ r.degradations|length }}</td>
+  </tr>
+</table>
+
+<h2>二 诊断结论与处置建议</h2>
+{% for d in r.diagnoses %}
+<p class="order">
+  <b>[{{ loop.index }}] {{ d.label }}（{{ d.cls }}）</b>
+  <span class="sev-{{ d.severity }}">判定 {{ d.severity }} 级</span>｜
+  置信度 {{ '%.2f'|format(d.confidence) }}｜
+  依据充分性 {{ '可溯源' if d.grounded else '无依据（已拒答）' }}｜
+  生成后端 {{ d.generator }}
+</p>
+<p>{{ d.finding }}</p>
+{% if d.actions %}
+<ul>
+  {% for a in d.actions %}<li>{{ a }}</li>{% endfor %}
+</ul>
+{% else %}
+<p class="quote">知识库未覆盖该类缺陷，系统未给出处置动作（拒绝编造）。</p>
+{% endif %}
+{% if d.citations %}
+{% set basis = d.citations | selectattr('role', 'equalto', 'basis') | list %}
+{% set refs = d.citations | rejectattr('role', 'equalto', 'basis') | list %}
+{% if basis %}
+<p class="cite">依据条款（动作直接来自这些条款）：</p>
+{% for c in basis %}
+<p class="quote">{{ c.clause_no }}《{{ c.doc_title }}》（相关度 {{ '%.3f'|format(c.score) }}）<br>{{ c.quote }}</p>
+{% endfor %}
+{% endif %}
+{% if refs %}
+<p class="cite">参考条款（检索命中但未作为处置动作，供人工判断）：</p>
+{% for c in refs %}
+<p class="quote">{{ c.clause_no }}《{{ c.doc_title }}》（相关度 {{ '%.3f'|format(c.score) }}）<br>{{ c.quote }}</p>
+{% endfor %}
+{% endif %}
+{% endif %}
+{% endfor %}
+
+<h2>三 工单与派单</h2>
+<table class="meta">
+  <tr><td class="kv">工单号</td><td class="kv">等级</td><td class="kv">责任班组</td><td class="kv">时限</td><td class="kv">路由</td><td class="kv">状态</td><td class="kv">通知</td></tr>
+  {% for o in r.work_orders %}
+  <tr>
+    <td>{{ o.order_id }}</td>
+    <td class="sev-{{ o.severity }}">{{ o.severity }}</td>
+    <td>{{ o.assignee_role }}</td>
+    <td>{{ o.sla_hours }} h</td>
+    <td>{{ '自动派单' if o.route == 'auto' else '转人工复核' }}</td>
+    <td>{{ o.status }}</td>
+    <td>{{ o.notify_status or '—' }}</td>
+  </tr>
+  {% if o.review_reasons %}
+  <tr><td colspan="7" class="cite">转人工原因：{{ o.review_reasons|join('；') }}</td></tr>
+  {% endif %}
+  {% endfor %}
+</table>
+
+<h2>四 降级与可观测性</h2>
+{% if r.degradations %}
+<ul>
+  {% for x in r.degradations %}
+  <li>[{{ x.stage }}] {{ x.reason }} → {{ x.fallback }}</li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>本次运行未触发任何降级。</p>
+{% endif %}
+
+<h2>五 分阶段耗时</h2>
+<ul>
+  {% for t in r.timings %}<li>{{ t.stage }}：{{ '%.1f'|format(t.ms) }} ms</li>{% endfor %}
+</ul>
+
+<p class="foot">
+  本报告由「低空之眼」自动生成。知识库为项目自编演示占位文本，非任何官方标准原文；
+  检测结果为合成演示图的离线标注，仅用于验证链路连通性，不代表真实模型精度。
+  处置动作须经具备资质的人员复核后方可执行。
+</p>
+
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "scope": "Download transport plus bounded pre-download ZIP layout metadata; trainer/preparation handled by parent agent",
+  "zip_layout_probe": {"script": "tools/probe_zip_layout.py", "per_dataset_max_read_bytes": 8388608, "method": "1 byte source identity + EOCD tail + central directory HTTP ranges", "checks": "Local three-entry path fixture, ZIP64 extra usize/csize/offset assertion, deflated XML/TXT content with CRC fixture all passed", "status": "ZIP64-corrected member-content probe sent to parent", "correction": "Earlier huge uncompressed sums were invalid because ZIP64 per-entry sentinel 0xffffffff was counted; fixed by parsing extra tag0x0001", "member_limits": "256KiB compressed and decompressed, total8MiB per dataset; content display first12000 chars", "requested_content": "DFire data.yaml; IP102 test/trainval.txt, first XML, all Annotations TXT", "parent_verified_layout": "DFire21527 images splits14122/3099/4306; IP102 JPEGImages18981, Annotations18983 (18976xml+7txt), root trainval/test"},
+  "source_version": "Kaggle datasetVersionNumber=1, unchanged URLs",
+  "probe_source": "Remote probe results provided by parent agent",
+  "dfire": {
+    "url": "https://www.kaggle.com/api/v1/datasets/download/sayedgamal99/smoke-fire-detection-yolo?datasetVersionNumber=1",
+    "bytes": 3049605157,
+    "source_etag_md5": "9745236834d65441af996cb6da6a4fde",
+    "bounded_range_bytes": 262144,
+    "normal_seconds": 9.624,
+    "normal_mib_per_second": 0.02598,
+    "direct_seconds": 4.694,
+    "direct_mib_per_second": 0.05326
+  },
+  "ip102": {
+    "url": "https://www.kaggle.com/api/v1/datasets/download/parserpixy/ip102-dataset?datasetVersionNumber=1",
+    "bytes": 807750864,
+    "source_etag_md5": "85869d5c3c686e936c0dde780b208b01",
+    "bounded_range_bytes": 262144,
+    "normal_seconds": 4.674,
+    "normal_mib_per_second": 0.05348,
+    "direct_seconds": 3.347,
+    "direct_mib_per_second": 0.07469
+  },
+  "probe_findings": "No proxy variables; all requests HTTP206 with Accept-Ranges bytes. Normal/direct prefix SHA256 matched per dataset; literal prefix hashes retained by parent remote output, not available to this subagent.",
+  "implementation": {
+    "workers": 16,
+    "block_bytes": 2097152,
+    "retries": 6,
+    "timeout_seconds": 120,
+    "source_identity": "Pinned URL, length, ETag; If-Match and exact Content-Range for every block",
+    "resume": "fsync block before atomic ledger replacement; preserve complete validated-prefix old sequential blocks",
+    "validation": "Full MD5 against ETag and x-goog-hash where available; SHA256; all ZIP member CRCs before archive promotion",
+    "checks": "Local syntax pass; five offline regression checks passed: exact archive/resumed-block reuse, wrong prefix refused, durable-ledger preallocated resume, changed-version ledger refused, HTTP200 ignored-Range refused before any archive write",
+    "active_pids_parent_verified": {"dfire": 3517, "ip102": 3518, "pipeline_parent_owned": 3622},
+    "parallel_observed_dfire": {"completed_ranges": 33, "range_count": 1455, "new_bytes": 52428800, "elapsed_seconds": 59.5, "mib_per_second": 0.84},
+    "parallel_observed_ip102": {"completed_ranges": 25, "range_count": 386, "new_bytes": 39845888, "elapsed_seconds": 51.71, "mib_per_second": 0.735},
+    "baseline_observed_mib_per_second_approx": 0.016,
+    "speedup_vs_baseline_approx": {"dfire": 52.5, "ip102": 45.9},
+    "deployment_note": "Running processes imported version before final ETag-to-MD5 patch; parent will compare final receipts against expected source MD5 before training. No running process restarted.",
+    "progress_note": "Partial files are preallocated; use completed ranges ledger or new_bytes log, not file stat, to judge progress"
+  }
+}

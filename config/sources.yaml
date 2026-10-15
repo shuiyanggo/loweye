@@ -1,0 +1,33 @@
+# 知识文档来源登记表
+#
+# 为什么要这张表（方案 v2 第 4 章 M2）：
+# 巡检处置建议一旦给出，就必须能回答「依据是哪一份文件的哪一条、这一条是什么版本」。
+# 真实标准（GB/DL/T 系列）是付费资料，本项目在演示阶段使用自编占位文本，
+# 因此在此逐份登记其性质，绝不允许把占位文本冒充标准原文。
+
+version: 1
+
+documents:
+  - doc_id: demo_line_guide
+    title: 架空线路无人机巡检缺陷判定与处置导则（演示占位文本）
+    path: data/raw/demo_line_guide.md
+    source_version: demo-v1.0
+    source_date: "2026-10-12"
+    source_url: null
+    note: 本文件为项目自编占位文本，用于演示「章-节-条」切分与条款溯源链路，不是任何国家标准或行业标准的原文。
+
+  - doc_id: demo_crop_guide
+    title: 农作物病虫害无人机巡田识别与植保作业指引（演示占位文本）
+    path: data/raw/demo_crop_guide.md
+    source_version: demo-v1.0
+    source_date: "2026-10-12"
+    source_url: null
+    note: 本文件为项目自编占位文本，非农业农村部或任何官方机构发布的文件原文。
+
+  - doc_id: demo_emergency_plan
+    title: 山火与通道隐患应急响应处置预案（演示占位文本）
+    path: data/raw/demo_emergency_plan.md
+    source_version: demo-v1.0
+    source_date: "2026-10-12"
+    source_url: null
+    note: 本文件为项目自编占位文本，非任何政府或企业的正式预案原文。

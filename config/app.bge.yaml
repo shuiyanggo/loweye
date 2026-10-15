@@ -1,0 +1,99 @@
+# 低空之眼 · BGE 后端配置（由 config/app.yaml 派生）
+#
+# 用途：把检索后端换成 BAAI/bge-m3 向量 + BAAI/bge-reranker-v2-m3 重排，单独跑一套
+# 构建与评测，用来和默认的纯词法后端做对照。不改 app.yaml，是为了让默认的演示
+# 服务继续跑「零下载、低内存、快」的词法链路（现场演示更稳），BGE 结果单独出报告。
+#
+# 用法（权重先用 tools/fetch_models.py 拉到 models/ 下）：
+#   python -m loweye.cli.build_kb   --config config/app.bge.yaml
+#   python -m loweye.cli.evaluate   --config config/app.bge.yaml \
+#       --report out/eval_report_bge.md --json out/eval_report_bge.json
+#
+# 注意：index_dir 必须与 app.yaml 分开，否则会把词法索引覆盖掉。
+
+app:
+  name: 低空之眼
+  subtitle: 低空巡检决策层软件（BGE 后端）
+  version: 0.1.0
+  trace_retention: 200
+
+paths:
+  data_raw: data/raw
+  data_processed: data/processed
+  index_dir: data/index_bge      # 与词法索引分开，避免互相覆盖
+  assets: data/assets
+  uploads: data/uploads
+  out: out
+  web: web
+
+retrieval:
+  bm25_top_k: 30
+  vector_top_k: 30
+  fused_top_k: 20
+  final_top_k: 5
+  rrf_k: 60
+  min_relevance: 0.18
+  require_clause_no: true
+
+  # 向量后端换成 BGE-M3（1024 维，本地权重目录走 cfg.abs_path 解析）
+  embedder: sentence_transformer
+  embed_dim: 1024
+  embedder_model: BAAI/bge-m3
+  embedder_model_path: models/bge-m3
+
+  reranker: cross_encoder
+  reranker_model: BAAI/bge-reranker-v2-m3
+  reranker_model_path: models/bge-reranker-v2-m3
+  lexicon: config/lexicon.yaml
+
+  scene_docs:
+    power: [demo_line_guide]
+    agriculture: [demo_crop_guide]
+    emergency: [demo_emergency_plan, demo_line_guide]
+
+detect:
+  detector: sidecar
+  onnx_path: null
+  input_size: 640
+  nms_iou: 0.50
+  class_names: null
+  conf_threshold: 0.35
+  human_review_threshold: 0.60
+  model_version: sidecar-demo-v1
+  slice:
+    enabled: true
+    size: 640
+    overlap: 0.2
+
+llm:
+  provider: template
+  base_url: null
+  api_key_env: LOWEYE_LLM_API_KEY
+  model: null
+  timeout_s: 20
+  max_retries: 1
+
+tools:
+  workorder:
+    enabled: true
+  notify:
+    enabled: false
+    webhook_url_env: LOWEYE_NOTIFY_WEBHOOK
+    timeout_s: 5
+  weather:
+    enabled: false
+    api_key_env: LOWEYE_WEATHER_KEY
+  report:
+    enabled: true
+    template: config/report_template.html
+
+severity:
+  rules_file: config/routes.yaml
+
+eval:
+  goldset: eval/gold_qa.yaml
+  arm_b_mode: scripted
+
+server:
+  host: 127.0.0.1
+  port: 8848

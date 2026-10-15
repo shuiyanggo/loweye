@@ -1,0 +1,106 @@
+# 低空之眼 · 真实 ONNX 检测权重配置（验证用，由 config/app.yaml 派生）
+#
+# 用途：证明「真实检测权重 + ONNX Runtime + SAHI 切片」这条链路本身能跑通，
+# 与 sidecar 合成标注无关。这里用的是 COCO 预训练的 RTMDet-tiny（OpenMMLab，
+# Apache-2.0）第三方 ONNX 导出，类别是 COCO 的 80 类——**它不是电力缺陷模型**，
+# 因此不能用来给出任何缺陷漏检率，只能验证推理通道。
+#
+# 为什么不用 Ultralytics 系的 YOLOv8/v5 ONNX：那些权重继承 AGPL-3.0，
+# 与本项目「避开 AGPL」的许可要求冲突（见 docs/proposal/_research_detection.md）。
+#
+# 用法：
+#   python -m tools.probe_detector --config config/app.onnx.yaml --image <图片路径>
+#   python -m loweye.cli.analyze --config config/app.onnx.yaml --image demo_tower_01
+
+app:
+  name: 低空之眼
+  subtitle: 低空巡检决策层软件（ONNX 检测通道验证）
+  version: 0.1.0
+  trace_retention: 200
+
+paths:
+  data_raw: data/raw
+  data_processed: data/processed
+  index_dir: data/index
+  assets: data/assets
+  uploads: data/uploads
+  out: out
+  web: web
+
+retrieval:
+  bm25_top_k: 30
+  vector_top_k: 30
+  fused_top_k: 20
+  final_top_k: 5
+  rrf_k: 60
+  min_relevance: 0.18
+  require_clause_no: true
+  embedder: hashing_tfidf
+  embed_dim: 4096
+  embedder_model: BAAI/bge-m3
+  embedder_model_path: null
+  reranker: lexical
+  reranker_model: BAAI/bge-reranker-v2-m3
+  reranker_model_path: null
+  lexicon: config/lexicon.yaml
+  scene_docs:
+    power: [demo_line_guide]
+    agriculture: [demo_crop_guide]
+    emergency: [demo_emergency_plan, demo_line_guide]
+
+detect:
+  detector: onnx
+  onnx_path: models/detector/rtmdet-tiny-coco.onnx
+  input_size: 640
+  nms_iou: 0.50
+  # COCO 80 类：类别顺序必须与导出时一致，这是 RTMDet 官方 COCO 顺序
+  class_names:
+    [person, bicycle, car, motorcycle, airplane, bus, train, truck, boat, traffic light,
+     fire hydrant, stop sign, parking meter, bench, bird, cat, dog, horse, sheep, cow,
+     elephant, bear, zebra, giraffe, backpack, umbrella, handbag, tie, suitcase, frisbee,
+     skis, snowboard, sports ball, kite, baseball bat, baseball glove, skateboard, surfboard,
+     tennis racket, bottle, wine glass, cup, fork, knife, spoon, bowl, banana, apple,
+     sandwich, orange, broccoli, carrot, hot dog, pizza, donut, cake, chair, couch,
+     potted plant, bed, dining table, toilet, tv, laptop, mouse, remote, keyboard, cell phone,
+     microwave, oven, toaster, sink, refrigerator, book, clock, vase, scissors, teddy bear,
+     hair drier, toothbrush]
+  conf_threshold: 0.35
+  human_review_threshold: 0.60
+  model_version: rtmdet-tiny-coco-onnx-demo
+  slice:
+    enabled: true
+    size: 640
+    overlap: 0.2
+
+llm:
+  provider: template
+  base_url: null
+  api_key_env: LOWEYE_LLM_API_KEY
+  model: null
+  timeout_s: 20
+  max_retries: 1
+
+tools:
+  workorder:
+    enabled: false
+  notify:
+    enabled: false
+    webhook_url_env: LOWEYE_NOTIFY_WEBHOOK
+    timeout_s: 5
+  weather:
+    enabled: false
+    api_key_env: LOWEYE_WEATHER_KEY
+  report:
+    enabled: true
+    template: config/report_template.html
+
+severity:
+  rules_file: config/routes.yaml
+
+eval:
+  goldset: eval/gold_qa.yaml
+  arm_b_mode: scripted
+
+server:
+  host: 127.0.0.1
+  port: 8849

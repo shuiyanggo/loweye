@@ -1,0 +1,98 @@
+# 低空之眼 · GPU 微调检测权重配置（FCOS-ResNet50-FPN，烟火预警（D-Fire / FCOS-R50-FPN 640））
+#
+# 权重来源：AutoDL GPU（tools/gpu/run_inspection_tasks.py 协调 prepare → 冒烟 → 24 轮训练），
+# 导出 ONNX 后由 tools/gpu/monitor_inspection.py 逐件校验 SHA256 再回收。
+#
+# 下面四项必须彼此一致，任何一项不对都只在推理期报错（先跑 tools/check_detector_config.py 可提前发现）：
+#   onnx_path     = models/detector/fire_smoke_fcos_640.onnx
+#   input_size    = 640
+#   class_names   = 2 类，顺序与训练清单一致
+#   model_version = fire-smoke-fcos-r50fpn-640
+#
+# 本文件由 tools/write_detector_variant_config.py 生成，不要手改（改参数后重新生成）。
+#
+# 用法：
+#   python -m tools.check_detector_config --config config/app.<task>_gpu.yaml
+#   python -m loweye.cli.serve --config config/app.<task>_gpu.yaml --no-reload
+#
+app:
+  name: 低空之眼
+  subtitle: 烟火预警（D-Fire / FCOS-R50-FPN 640）
+  version: 0.1.0
+  trace_retention: 200
+
+paths:
+  data_raw: data/raw
+  data_processed: data/processed
+  index_dir: data/index
+  assets: data/assets
+  uploads: data/uploads
+  out: out
+  web: web
+
+retrieval:
+  bm25_top_k: 30
+  vector_top_k: 30
+  fused_top_k: 20
+  final_top_k: 5
+  rrf_k: 60
+  min_relevance: 0.18
+  require_clause_no: true
+  embedder: hashing_tfidf
+  embed_dim: 4096
+  embedder_model: BAAI/bge-m3
+  embedder_model_path: null
+  reranker: lexical
+  reranker_model: BAAI/bge-reranker-v2-m3
+  reranker_model_path: null
+  lexicon: config/lexicon.yaml
+  scene_docs:
+    power: [demo_line_guide]
+    agriculture: [demo_crop_guide]
+    emergency: [demo_emergency_plan, demo_line_guide]
+
+detect:
+  detector: onnx
+  onnx_path: models/detector/fire_smoke_fcos_640.onnx
+  class_names: [smoke, fire]
+  input_size: 640               # 与导出时一致；导出图里的尺寸是常量，喂别的尺寸会算错
+  nms_iou: 0.50
+  conf_threshold: 0.25
+  human_review_threshold: 0.60
+  model_version: fire-smoke-fcos-r50fpn-640
+  slice:
+    enabled: false               # 与独立评测协议一致（整幅 letterbox）；切片会改变指标口径
+    size: 640
+    overlap: 0.2
+llm:
+  provider: template
+  base_url: null
+  api_key_env: LOWEYE_LLM_API_KEY
+  model: null
+  timeout_s: 20
+  max_retries: 1
+
+tools:
+  workorder:
+    enabled: false
+  notify:
+    enabled: false
+    webhook_url_env: LOWEYE_NOTIFY_WEBHOOK
+    timeout_s: 5
+  weather:
+    enabled: false
+    api_key_env: LOWEYE_WEATHER_KEY
+  report:
+    enabled: true
+    template: config/report_template.html
+
+severity:
+  rules_file: config/routes.yaml
+
+eval:
+  goldset: eval/gold_qa.yaml
+  arm_b_mode: scripted
+
+server:
+  host: 127.0.0.1
+  port: 8852

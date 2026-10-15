@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>低空之眼 · 低空巡检决策层软件</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='18' font-size='18'>L</text></svg>">
+</head>
+<body>
+
+<!-- 本地图标 sprite 断网可用 图标来自 Lucide 开源图标集 -->
+<div class="sprite-host" aria-hidden="true"></div>
+
+<div class="app">
+
+  <header class="topbar" id="topbar">
+    <div class="brand">
+      <span class="brand-mark"><svg class="ico"><use href="vendor/icons.svg#i-scan-line"></use></svg></span>
+      <span class="brand-text">
+        <strong>低空之眼</strong>
+        <em>低空巡检决策层软件 识别 诊断 分级 派单 归档</em>
+      </span>
+    </div>
+
+    <div class="topbar-right">
+      <div class="status-pill is-loading" id="health-pill" title="系统状态">
+        <span class="dot"></span>
+        <span id="health-text">连接中</span>
+      </div>
+      <button class="btn btn-ghost" id="btn-selfcheck" title="全链路自检" aria-label="全链路自检">
+        <svg class="ico"><use href="vendor/icons.svg#i-shield-check"></use></svg>
+        <span>全链路自检</span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button class="tab is-active" data-view="console" role="tab">
+      <svg class="ico"><use href="vendor/icons.svg#i-layout-dashboard"></use></svg><span>分析台</span>
+    </button>
+    <button class="tab" data-view="orders" role="tab">
+      <svg class="ico"><use href="vendor/icons.svg#i-clipboard-list"></use></svg><span>工单</span>
+      <span class="tab-badge" id="orders-badge">0</span>
+    </button>
+    <button class="tab" data-view="kb" role="tab">
+      <svg class="ico"><use href="vendor/icons.svg#i-book-open"></use></svg><span>知识库</span>
+    </button>
+    <button class="tab" data-view="traces" role="tab">
+      <svg class="ico"><use href="vendor/icons.svg#i-history"></use></svg><span>追溯</span>
+    </button>
+    <span class="tab-ink" id="tab-ink" aria-hidden="true"></span>
+  </nav>
+
+  <main class="views" id="views">
+
+    <!-- ============================ 分析台 ============================ -->
+    <section class="view is-active" id="view-console">
+
+      <aside class="rail">
+        <div class="panel">
+          <div class="panel-head">
+            <h2><svg class="ico"><use href="vendor/icons.svg#i-image"></use></svg>演示图库</h2>
+            <button class="icon-btn" id="btn-refresh-assets" title="重新读取图库">
+              <svg class="ico"><use href="vendor/icons.svg#i-refresh-cw"></use></svg>
+            </button>
+          </div>
+          <div class="asset-grid" id="asset-grid"></div>
+
+          <label class="upload-drop" id="upload-drop">
+            <input type="file" id="file-input" accept="image/png,image/jpeg" hidden>
+            <svg class="ico ico-lg"><use href="vendor/icons.svg#i-upload"></use></svg>
+            <span>拖入或点选一张巡检图</span>
+            <em>上传后走同一条链路 结果不落公网</em>
+          </label>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2><svg class="ico"><use href="vendor/icons.svg#i-cpu"></use></svg>运行后端</h2></div>
+          <dl class="kv-list" id="backend-list"></dl>
+          <p class="panel-note" id="backend-note"></p>
+        </div>
+      </aside>
+
+      <div class="stage-col">
+
+        <section class="stage panel" id="stage">
+          <div class="panel-head">
+            <h2><svg class="ico"><use href="vendor/icons.svg#i-target"></use></svg>识别舞台</h2>
+            <div class="stage-actions">
+              <span class="chip" id="chip-scene">场景 —</span>
+              <span class="chip chip-mono" id="chip-trace">追溯号 —</span>
+              <button class="btn btn-ghost btn-sm" id="btn-report-pdf" disabled>
+                <svg class="ico"><use href="vendor/icons.svg#i-download"></use></svg><span>PDF 报告</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="frame-wrap">
+            <figure class="frame" id="frame">
+              <img id="stage-img" alt="巡检图" hidden>
+              <div class="overlay" id="overlay"></div>
+              <div class="frame-empty" id="frame-empty">
+                <svg class="ico ico-xl"><use href="vendor/icons.svg#i-radio"></use></svg>
+                <p>选一张演示图 或拖入自己的图</p>
+                <em>链路 识别 → 诊断 → 分级 → 派单 → 归档</em>
+              </div>
+            </figure>
+          </div>
+
+          <ol class="pipeline" id="pipeline">
+            <li class="pnode" data-stage="detect">
+              <span class="pdot"><svg class="ico"><use href="vendor/icons.svg#i-scan-line"></use></svg></span>
+              <span class="pname">识别</span><span class="pms">—</span>
+            </li>
+            <li class="pnode" data-stage="diagnose">
+              <span class="pdot"><svg class="ico"><use href="vendor/icons.svg#i-search"></use></svg></span>
+              <span class="pname">诊断</span><span class="pms">—</span>
+            </li>
+            <li class="pnode" data-stage="grade_dispatch">
+              <span class="pdot"><svg class="ico"><use href="vendor/icons.svg#i-route"></use></svg></span>
+              <span class="pname">分级派单</span><span class="pms">—</span>
+            </li>
+            <li class="pnode" data-stage="archive">
+              <span class="pdot"><svg class="ico"><use href="vendor/icons.svg#i-database"></use></svg></span>
+              <span class="pname">归档</span><span class="pms">—</span>
+            </li>
+            <span class="ptrack" aria-hidden="true"><span class="ptrack-fill" id="ptrack-fill"></span></span>
+          </ol>
+
+          <div class="stage-meta" id="stage-meta"></div>
+        </section>
+
+        <section class="findings" id="findings">
+          <div class="panel empty-panel" id="findings-empty">
+            <svg class="ico ico-lg"><use href="vendor/icons.svg#i-list-checks"></use></svg>
+            <p>诊断结论与处置建议会出现在这里</p>
+            <em>每条建议都带条款号 点条款可看原文</em>
+          </div>
+        </section>
+
+        <section class="orders-strip" id="orders-strip"></section>
+      </div>
+    </section>
+
+    <!-- ============================ 工单 ============================ -->
+    <section class="view" id="view-orders">
+      <div class="panel">
+        <div class="panel-head">
+          <h2><svg class="ico"><use href="vendor/icons.svg#i-clipboard-list"></use></svg>工单队列</h2>
+          <div class="segmented" id="order-filter">
+            <button class="seg is-active" data-filter="all">全部</button>
+            <button class="seg" data-filter="human_review">待人工确认</button>
+            <button class="seg" data-filter="P1">P1</button>
+            <button class="seg" data-filter="P2">P2</button>
+          </div>
+        </div>
+        <div class="order-list" id="order-list"></div>
+      </div>
+    </section>
+
+    <!-- ============================ 知识库 ============================ -->
+    <section class="view" id="view-kb">
+      <div class="kb-layout">
+        <div class="panel">
+          <div class="panel-head">
+            <h2><svg class="ico"><use href="vendor/icons.svg#i-search"></use></svg>条款检索</h2>
+            <span class="chip" id="kb-chip">—</span>
+          </div>
+          <form class="search-row" id="search-form">
+            <input type="search" id="search-input" placeholder="例：绝缘子自爆怎么处理 / 树障超限的净空距离" autocomplete="off">
+            <button class="btn btn-primary" type="submit">
+              <svg class="ico"><use href="vendor/icons.svg#i-search"></use></svg><span>检索</span>
+            </button>
+          </form>
+          <div class="hint-row">
+            <span>试试</span>
+            <button class="hint" data-q="绝缘子自爆怎么处理">绝缘子自爆怎么处理</button>
+            <button class="hint" data-q="瓷瓶上落了厚厚一层灰 算几级">口语 瓷瓶落灰算几级</button>
+            <button class="hint" data-q="红外测温的温升判据是多少">知识库边界 红外测温</button>
+            <button class="hint" data-q="今天股市行情怎么样">越界 股市行情</button>
+          </div>
+          <div class="hit-list" id="hit-list"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2><svg class="ico"><use href="vendor/icons.svg#i-layers"></use></svg>检索链路</h2></div>
+          <p class="panel-note">
+            四路分数全摊开 BM25 与向量各自召回 用 RRF 融合 再用词面重排把真正对得上的条款提到前面
+            低于覆盖阈值就拒答 不编
+          </p>
+          <ul class="stage-legend">
+            <li><span class="lg lg-bm25"></span><b>BM25</b> 关键词字面命中</li>
+            <li><span class="lg lg-vec"></span><b>向量</b> 语义相似召回</li>
+            <li><span class="lg lg-rrf"></span><b>RRF</b> 两路排名融合</li>
+            <li><span class="lg lg-re"></span><b>重排</b> 决定最终排序与是否覆盖</li>
+          </ul>
+          <dl class="kv-list" id="kb-stats"></dl>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ 追溯 ============================ -->
+    <section class="view" id="view-traces">
+      <div class="panel">
+        <div class="panel-head">
+          <h2><svg class="ico"><use href="vendor/icons.svg#i-history"></use></svg>分析追溯</h2>
+          <button class="icon-btn" id="btn-refresh-traces" title="刷新">
+            <svg class="ico"><use href="vendor/icons.svg#i-refresh-cw"></use></svg>
+          </button>
+        </div>
+        <div class="trace-list" id="trace-list"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="foot">
+    <span>低空之眼 · 决策层软件原型</span>
+    <span class="foot-sep">·</span>
+    <span>检测与知识文档均为演示数据 用于验证链路 不代表模型精度</span>
+  </footer>
+</div>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<div class="modal" id="modal" hidden>
+  <div class="modal-card" id="modal-card" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h3 id="modal-title">条款原文</h3>
+      <button class="icon-btn" id="modal-close" title="关闭">
+        <svg class="ico"><use href="vendor/icons.svg#i-x"></use></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

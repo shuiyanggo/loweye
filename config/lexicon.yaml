@@ -1,0 +1,106 @@
+# 领域术语表（现场口语 → 规程术语）
+#
+# 为什么需要它：巡检一线的人不会照着规程原文提问。他说「塔上那串瓷瓶碎了一片」，
+# 文档里写的是「绝缘子自爆」。纯词法检索（BM25 + 字符 n-gram）在这种词面不对齐的
+# 提问上会直接失分 —— 这不是调阈值能解决的，降阈值只会让错误条款被当成依据。
+#
+# 用途（检索前的一次查询归一化 + 扩展，不改动知识库原文）：
+#   1) 归一化：把提问里的口语说法替换成规范术语，使词面与文档对齐；
+#   2) 扩展：把命中的规范术语追加到查询里，提高 BM25 的召回。
+# 检索结果里会带上归一化后的查询串，用户能看到系统「听成了什么」。
+#
+# 维护约定：
+#   - canonical 必须与知识库文档实际用词一致，否则扩了也没用；
+#   - aliases 只收现场确实会说的说法，不收生造词；
+#   - 单字别名只允许不会与常用词混淆的（塔、歪、砍、锈、烟、虫、苗）。
+terms:
+  - canonical: 绝缘子
+    aliases: [瓷瓶, 瓷套, 绝缘串, 绝缘子串, 绝缘瓶, 碟子]
+  - canonical: 自爆
+    aliases: [炸裂, 爆裂, 碎裂, 碎了, 碎了一片, 掉了片, 掉片, 破裂, 零值]
+  - canonical: 破损
+    aliases: [破洞, 缺口, 开裂, 破了, 烂了]
+  - canonical: 污秽
+    aliases: [脏污, 积污, 灰多, 一层灰, 粉层, 脏了]
+  - canonical: 金具
+    aliases: [铁件, 金属件, 线夹, 卡子, 挂件]
+  - canonical: 锈蚀
+    aliases: [生锈, 锈, 腐蚀, 氧化]
+  - canonical: 导线
+    aliases: [电线, 电缆, 线路导线, 铝线, 钢芯铝绞线]
+  - canonical: 断股
+    aliases: [断了几股, 断了股, 断丝, 散股, 断线, 断了一股]
+  - canonical: 杆塔
+    aliases: [塔, 杆子, 电杆, 铁塔, 塔架, 铁架子, 杆]
+  - canonical: 倾斜
+    aliases: [歪, 歪了, 斜了, 倒了, 立不正]
+  - canonical: 基础
+    aliases: [底盘, 地基, 塔脚, 沉了, 沉降, 下沉]
+  - canonical: 异物
+    aliases: [塑料布, 塑料膜, 农膜, 地膜, 风筝, 遮阳网, 布条, 气球, 编织袋, 挂的东西, 垃圾]
+  - canonical: 悬挂
+    aliases: [缠, 缠到, 挂在, 挂上, 搭在, 挂住, 兜住]
+  - canonical: 树障
+    aliases: [树木, 大树, 树枝, 毛竹, 竹子, 速生树, 速生树种, 树]
+  - canonical: 砍伐
+    aliases: [砍, 锯, 修剪, 剪枝, 清障, 伐]
+  - canonical: 净空
+    aliases: [快碰到了, 快碰到, 碰到线, 距离不够, 藏距不够, 离得太近]
+  - canonical: 病斑
+    aliases: [长斑, 斑点, 斑, 黄叶, 叶斑, 叶子长斑, 叶片发黄]
+  - canonical: 病害
+    aliases: [得病, 发病, 生病, 烂根, 枯萎, 枯死, 死苗]
+  - canonical: 虫害
+    aliases: [虫, 虫子, 害虫, 吃叶子, 吃光, 虫口, 卷叶, 钻心虫]
+  - canonical: 施药
+    aliases: [打药, 喷药, 用药, 撒药, 喷施]
+  - canonical: 生物防治
+    aliases: [以虫治虫, 天敌, 少打药, 不打药, 绿色防治]
+  - canonical: 防治
+    aliases: [治一下, 处理一下, 防一下, 治虫, 治病]
+  - canonical: 取样
+    aliases: [采样, 拿样本, 带样本, 送检, 化验]
+  - canonical: 火情
+    aliases: [冒烟, 着火, 起火, 山火, 明火, 火, 烧起来了]
+  - canonical: 烟雾
+    aliases: [烟, 浓烟, 烟气]
+  - canonical: 应急
+    aliases: [突发, 紧急情况, 出事了]
+  - canonical: 上报
+    aliases: [报告, 打电话, 报上去, 通知上面, 汇报, 报一下]
+  - canonical: 复核
+    aliases: [复查, 再确认, 核实, 核对, 再看一遍]
+  - canonical: 监测
+    aliases: [监视, 盯着, 看守, 观察, 守着]
+  - canonical: 归档
+    aliases: [存档, 台账, 留档, 记录留存, 归档保存]
+  - canonical: 巡检
+    aliases: [巡视, 巡线, 检查, 飞一趟, 看一遍, 巡查, 排查]
+  - canonical: 影像
+    aliases: [照片, 图片, 图像, 拍的照片, 拍的图, 画面]
+  - canonical: 分辨率
+    aliases: [原图, 无损, 不压缩, 压缩, 清晰度, 像素, 存的图]
+  - canonical: 遮挡
+    aliases: [挡住, 遮住, 看不全, 挡住了]
+  - canonical: 重叠率
+    aliases: [重叠, 压边, 搭接]
+  - canonical: 停电
+    aliases: [拉闸, 断电, 停下来, 转检修, 申请停电]
+  - canonical: 除锈
+    aliases: [打磨, 刷漆, 防腐, 防锈]
+  - canonical: 涂覆
+    aliases: [刷, 涂, 上漆, 喷漆]
+  - canonical: 测量
+    aliases: [量, 测, 测一下, 量一下, 测量一下]
+  - canonical: 接触电阻
+    aliases: [电阻, 导通, 接触良好]
+  - canonical: 缺陷
+    aliases: [问题, 毛病, 隐患, 故障, 不正常]
+  - canonical: 危急缺陷
+    aliases: [很危险, 马上出事, 严重问题, 要出事故]
+  - canonical: 无人机
+    aliases: [飞机, 机子, 巡线飞机, 飞行器]
+  - canonical: 风速
+    aliases: [风大, 风力, 刮风]
+  - canonical: 灭火
+    aliases: [扑火, 打火, 扑灭, 灭了]
